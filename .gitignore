@@ -3,5 +3,8 @@ data/
 *.csv
 .idea/
 *.iml
+# Allow docs/ images, ignore others
 *.jpeg
 *.png
+!docs/*.jpeg
+!docs/*.png
