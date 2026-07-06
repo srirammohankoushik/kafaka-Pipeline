@@ -44,7 +44,8 @@ services:
       start_period: 30s
 
   pipeline:
-    build: .
+    image: srirammohankoushik2127/kafka-pipeline-v2:latest
+    # build: .    # Uncomment to build from source instead of pulling from DockerHub
     container_name: pipeline-v2
     depends_on:
       kafka:

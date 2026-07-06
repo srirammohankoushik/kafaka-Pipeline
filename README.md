@@ -86,30 +86,77 @@ Memory — peaks at ~494.8 MB out of 3.6 GB (≈0.5 GB per container), holding s
 
 ## Quick Start
 
-### Docker Compose (recommended)
+### Option 1: Clone & Run (recommended)
 ```bash
-docker compose up kafka -d          # Start Kafka
-docker compose run pipeline         # Run full 50M pipeline
+git clone https://github.com/srirammohankoushik/kafaka-Pipeline.git
+cd kafaka-Pipeline
+docker compose up kafka -d
 docker compose run pipeline 1000    # Smoke test
+docker compose run pipeline         # Full 50M run
 ```
 
-### DockerHub
-```bash
-# Pull the pre-built image
-docker pull srirammohankoushik2127/kafka-pipeline-v2:latest
+### Option 2: Run from DockerHub (no cloning needed)
 
-# Run with docker compose (uses local build by default)
-# Or override to use the DockerHub image:
-docker compose up kafka -d
-docker run --rm --network kafka-pipeline-v2_default \
-  -e BOOTSTRAP=kafka-v2:9092 \
-  -v C:\pipeline-data:/app/data \
-  srirammohankoushik2127/kafka-pipeline-v2:latest 1000
+Create a `docker-compose.yml` file with this content:
+
+```yaml
+services:
+  kafka:
+    image: apache/kafka:3.7.0
+    container_name: kafka-v2
+    ports:
+      - "29092:29092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka-v2:9093
+      KAFKA_LISTENERS: INTERNAL://:9092,EXTERNAL://:29092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka-v2:9092,EXTERNAL://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_NUM_PARTITIONS: 3
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
+      KAFKA_HEAP_OPTS: "-Xmx512m -Xms512m"
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: "640MB"
+    healthcheck:
+      test: ["CMD", "/opt/kafka/bin/kafka-topics.sh", "--bootstrap-server", "localhost:9092", "--list"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  pipeline:
+    image: srirammohankoushik2127/kafka-pipeline-v2:latest
+    depends_on:
+      kafka:
+        condition: service_healthy
+    environment:
+      BOOTSTRAP: kafka-v2:9092
+    deploy:
+      resources:
+        limits:
+          cpus: "3.0"
+          memory: "1280MB"
+    volumes:
+      - ./data:/app/data
+```
+
+Then run:
+```bash
+docker compose up kafka -d          # Start Kafka
+docker compose run pipeline 1000    # Smoke test (1000 records)
+docker compose run pipeline         # Full run (50M records)
 ```
 
 Image: [`srirammohankoushik2127/kafka-pipeline-v2`](https://hub.docker.com/r/srirammohankoushik2127/kafka-pipeline-v2)
 
-### Local
+### Option 3: Local (requires Kafka on localhost:29092)
 ```bash
 mvn clean package -q
 
