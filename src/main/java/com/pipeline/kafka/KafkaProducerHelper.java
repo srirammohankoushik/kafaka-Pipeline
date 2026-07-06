@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class KafkaProducerHelper {
 
-    // ── Topic management ──────────────────────────────────────────────
+    // ── Topic management 
 
     public static void recreateTopic(String bootstrap, String topic, int partitions) throws Exception {
         Properties p = new Properties();
@@ -46,7 +46,7 @@ public class KafkaProducerHelper {
         }
     }
 
-    // ── CSV → Kafka producer ──────────────────────────────────────────
+    // ── CSV → Kafka producer 
 
     public static long produceFile(File csvFile, String topic, Properties producerProps) throws Exception {
         AtomicLong sent = new AtomicLong(0);

@@ -3,6 +3,9 @@ data/
 *.csv
 .idea/
 *.iml
+.settings/
+.classpath
+.project
 # Allow docs/ images, ignore others
 *.jpeg
 *.png

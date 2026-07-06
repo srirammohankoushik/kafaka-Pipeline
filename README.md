@@ -27,6 +27,11 @@ src/main/java/com/pipeline/
 ├── kafka/KafkaProducerHelper.java   # 4-thread producer, BlockingQueue, poison pill
 ├── kafka/KafkaConsumerHelper.java   # Subscribe-based consumer group, offset tracking
 └── sorter/FileSorter.java           # Cardinality probe → bucket or merge sort
+
+src/test/java/com/pipeline/
+├── model/RecordTest.java            # CSV parsing & serialization tests (14 tests)
+├── generator/CsvGeneratorTest.java  # Schema validation tests (10 tests)
+└── sorter/SortComparatorTest.java   # Sort comparator tests (12 tests)
 ```
 
 ## How It Works
@@ -81,12 +86,28 @@ Memory — peaks at ~494.8 MB out of 3.6 GB (≈0.5 GB per container), holding s
 
 ## Quick Start
 
-### Docker (recommended)
+### Docker Compose (recommended)
 ```bash
 docker compose up kafka -d          # Start Kafka
 docker compose run pipeline         # Run full 50M pipeline
 docker compose run pipeline 1000    # Smoke test
 ```
+
+### DockerHub
+```bash
+# Pull the pre-built image
+docker pull srirammohankoushik2127/kafka-pipeline-v2:latest
+
+# Run with docker compose (uses local build by default)
+# Or override to use the DockerHub image:
+docker compose up kafka -d
+docker run --rm --network kafka-pipeline-v2_default \
+  -e BOOTSTRAP=kafka-v2:9092 \
+  -v C:\pipeline-data:/app/data \
+  srirammohankoushik2127/kafka-pipeline-v2:latest 1000
+```
+
+Image: [`srirammohankoushik2127/kafka-pipeline-v2`](https://hub.docker.com/r/srirammohankoushik2127/kafka-pipeline-v2)
 
 ### Local
 ```bash
@@ -106,6 +127,20 @@ docker exec kafka-v2 sh /tmp/verify.sh
 ```
 
 Checks: record counts (50M per topic), id sorted numerically, name/continent sorted alphabetically.
+
+## Unit Tests
+
+```bash
+mvn test
+```
+
+**36 tests** across 3 test classes:
+
+| Test Class | Tests | What it validates |
+|-----------|-------|-------------------|
+| `RecordTest` | 14 | CSV parsing (valid/invalid input), serialization, round-trip consistency |
+| `CsvGeneratorTest` | 10 | Schema constraints: id range, name length (10-15), address length (15-20), continent values, field count |
+| `SortComparatorTest` | 12 | ID numerical sort, name alphabetical sort, continent grouping, edge cases (duplicates, large values) |
 
 ## Scaling to 1B+ Records
 

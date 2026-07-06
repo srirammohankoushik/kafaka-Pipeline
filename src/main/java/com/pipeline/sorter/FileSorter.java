@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class FileSorter {
     private static final int CHUNK_SIZE = 500_000;           // 500K records per chunk (balanced for 768MB heap)
-    private static final int CARDINALITY_THRESHOLD = 200;
+    private static final int CARDINALITY_THRESHOLD = 10;
     private static final int PROGRESS = 5_000_000;
     private static final int WRITE_BUF = 512 * 1024;        // 512KB write buffer
     private static final int READ_BUF = 2 * 1024 * 1024;    // 2MB read buffer
@@ -42,7 +42,7 @@ public class FileSorter {
     }
 
     /**
-     * Main entry: read CSV file, sort, produce to Kafka output topic.
+     *entry: read CSV file, sort, produce to Kafka output topic.
      * Returns number of records produced.
      */
     public long sort(File csvFile) throws IOException {
@@ -77,7 +77,7 @@ public class FileSorter {
         }
     }
 
-    // ─── Bucket sort (continent) ─────────────────────────────────────
+    // ─── Bucket sort (continent─) 
 
     private long bucketSort(File csvFile, List<Record> probe) throws IOException {
         long t1 = System.currentTimeMillis();
@@ -137,7 +137,7 @@ public class FileSorter {
         return sent.get();
     }
 
-    // ─── External merge sort (id, name) ──────────────────────────────
+    // ─── External merge sort (id, name) 
 
     private long mergeSort(File csvFile, List<Record> probe) throws IOException {
         long t1 = System.currentTimeMillis();
@@ -169,7 +169,10 @@ public class FileSorter {
                 }
             }
         }
-        if (!buf.isEmpty()) { chunks.add(writeChunk(buf, chunks.size())); total += buf.size(); }
+		if (!buf.isEmpty()) {
+			chunks.add(writeChunk(buf, chunks.size()));
+			total += buf.size();
+		}
 
         System.out.printf("[%s] chunks: %,d records -> %d chunks in %.1fs%n",
                 key, total, chunks.size(), (System.currentTimeMillis() - t1) / 1000.0);
@@ -264,7 +267,7 @@ public class FileSorter {
         return sent.get();
     }
 
-    // ─── Helpers ─────────────────────────────────────────────────────
+    // ─── Helpers 
 
     private String keyOf(Record rec) {
         return switch (key) {
@@ -287,7 +290,13 @@ public class FileSorter {
     private void deleteDir(File dir) {
         if (!dir.exists()) return;
         File[] files = dir.listFiles();
-        if (files != null) for (File f : files) { if (f.isDirectory()) deleteDir(f); else f.delete(); }
+		if (files != null)
+			for (File f : files) {
+				if (f.isDirectory())
+					deleteDir(f);
+				else
+					f.delete();
+			}
         dir.delete();
     }
 
